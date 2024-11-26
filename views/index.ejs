@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Food Management</title>
+</head>
+<body>
+  <h1>Food Management</h1>
+  <table border="1" id="food-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Address</th>
+        <th>Price</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="food-body"></tbody>
+  </table>
+
+  <form id="food-form">
+    <input type="text" id="food-name" placeholder="Name" required>
+    <input type="text" id="food-address" placeholder="Address">
+    <input type="number" id="food-price" placeholder="Price" required>
+    <button type="submit">Add Food</button>
+  </form>
+
+  <script>
+    async function loadFoods() {
+      const response = await fetch("http://localhost:3000/foods");
+      const foods = await response.json();
+      const tableBody = document.getElementById("food-body");
+
+      tableBody.innerHTML = ""; // Clear previous content
+
+      foods.forEach(food => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${food.name}</td>
+          <td>${food.address || "N/A"}</td>
+          <td>${food.price}</td>
+          <td>
+            <button onclick="editFood('${food._id}', '${food.name}', '${food.address}', ${food.price})">Edit</button>
+            <button onclick="deleteFood('${food._id}')">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    document.getElementById("food-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("food-name").value;
+      const address = document.getElementById("food-address").value;
+      const price = document.getElementById("food-price").value;
+
+      await fetch("http://localhost:3000/foods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, address, price }),
+      });
+
+      loadFoods(); // Refresh list
+    });
+
+    async function deleteFood(id) {
+      await fetch(`http://localhost:3000/foods/${id}`, { method: "DELETE" });
+      loadFoods();
+    }
+
+    async function editFood(id, name, address, price) {
+      const newName = prompt("Enter new name:", name);
+      const newAddress = prompt("Enter new address:", address);
+      const newPrice = prompt("Enter new price:", price);
+
+      if (newName && newPrice) {
+        await fetch(`http://localhost:3000/foods/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName, address: newAddress, price: Number(newPrice) }),
+        });
+        loadFoods();
+      }
+    }
+
+    loadFoods(); // Initial load
+  </script>
+</body>
+</html>
